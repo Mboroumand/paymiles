@@ -57,8 +57,7 @@ export default function BookingForm({
       end_date: new Date(form.endDate).toISOString(),
       rate_per_mile: car.rate_per_mile,
       odometer_start: car.odometer_start,
-      included_miles: includedMiles || null,
-      deposit_amount: depositAmount || null,
+      // included_miles and deposit_amount require DB migration — added after columns exist
       delivery_requested: wantsDelivery,
       delivery_address: wantsDelivery ? form.deliveryAddress : null,
       pickup_location: wantsDelivery ? form.deliveryAddress : null,
