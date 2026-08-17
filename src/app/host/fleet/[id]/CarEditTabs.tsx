@@ -312,17 +312,19 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
                 )}
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1.5">Street address or area <span className="text-gray-300">(optional)</span></label>
+                <label className="block text-xs text-gray-400 mb-1.5">Street address</label>
                 <input value={locAddress} onChange={e => setLocAddress(e.target.value)}
-                  placeholder="e.g. 123 Main St, Downtown, Airport"
+                  placeholder="e.g. 123 Main St"
+                  required
                   disabled={!locCity}
                   className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 disabled:opacity-40 placeholder:text-gray-300" />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1.5">ZIP code <span className="text-gray-300">(optional)</span></label>
+                <label className="block text-xs text-gray-400 mb-1.5">ZIP code</label>
                 <input value={locZip} onChange={e => setLocZip(e.target.value)}
                   placeholder="e.g. 94102"
                   maxLength={10}
+                  required
                   disabled={!locCity}
                   className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 disabled:opacity-40 placeholder:text-gray-300" />
               </div>

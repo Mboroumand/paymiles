@@ -238,12 +238,13 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
 
         {/* Zip code */}
         <div>
-          <label className={labelCls}>ZIP code <span className="text-gray-500">(optional)</span></label>
+          <label className={labelCls}>ZIP code</label>
           <input
             value={locZip}
             onChange={e => setLocZip(e.target.value)}
             placeholder="e.g. 94102"
             maxLength={10}
+            required
             disabled={!locCity}
             className={inputCls}
           />
@@ -251,11 +252,12 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
 
         {/* Specific address / area */}
         <div>
-          <label className={labelCls}>Street address or area <span className="text-gray-500">(optional)</span></label>
+          <label className={labelCls}>Street address</label>
           <input
             value={locAddress}
             onChange={e => setLocAddress(e.target.value)}
-            placeholder="e.g. 123 Main St, Downtown, Airport"
+            placeholder="e.g. 123 Main St"
+            required
             disabled={!locCity}
             className={inputCls}
           />
