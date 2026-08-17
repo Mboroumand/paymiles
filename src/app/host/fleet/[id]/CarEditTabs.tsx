@@ -70,6 +70,8 @@ function NavLink({ tab, label, carId }: { tab: string; label: string; carId: str
 export default function CarEditTabs({ car, hostId }: { car: any; hostId: string }) {
   const searchParams = useSearchParams()
   const tab = searchParams.get('tab') ?? 'pricing'
+  const teslaStatus = searchParams.get('tesla')
+  const teslaError = searchParams.get('tesla_error')
   const router = useRouter()
 
   // Pricing state
@@ -255,6 +257,18 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
         <div>
           <h1 className="text-2xl font-bold mb-1">Details</h1>
           <p className="text-gray-400 text-sm mb-6">Update your car's information.</p>
+
+          {/* Tesla status messages */}
+          {teslaStatus === 'connected' && (
+            <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3 mb-4">
+              ✅ Tesla connected successfully!
+            </div>
+          )}
+          {teslaError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-4">
+              Tesla connection failed: {decodeURIComponent(teslaError)}
+            </div>
+          )}
 
           {/* Tesla connection status */}
           <div className={`rounded-2xl border p-5 mb-6 flex items-center justify-between ${car.tesla_vehicle_id ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
