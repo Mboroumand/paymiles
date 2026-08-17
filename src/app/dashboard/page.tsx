@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
@@ -11,7 +12,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const { data: profile } = await adminClient.from('profiles').select('*').eq('id', user.id).single()
   if (profile?.role === 'admin') redirect('/admin')
   if (profile?.role === 'host') redirect('/host')
 

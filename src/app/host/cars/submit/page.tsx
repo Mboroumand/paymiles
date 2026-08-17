@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import SubmitCarForm from './SubmitCarForm'
@@ -8,7 +9,7 @@ export default async function SubmitCarPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'host' && profile?.role !== 'admin') redirect('/dashboard')
 
   return (
