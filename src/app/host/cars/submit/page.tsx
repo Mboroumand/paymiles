@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import Navbar from '@/components/Navbar'
 import SubmitCarForm from './SubmitCarForm'
+import Link from 'next/link'
 
 export default async function SubmitCarPage() {
   const supabase = await createClient()
@@ -13,13 +13,13 @@ export default async function SubmitCarPage() {
   if (profile?.role !== 'host' && profile?.role !== 'admin') redirect('/dashboard')
 
   return (
-    <div className="min-h-screen">
-      <Navbar role="host" />
-      <div className="max-w-xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-2">Submit Your Car</h1>
-        <p className="text-gray-400 mb-8">Your car will be reviewed by an admin before going live on the platform.</p>
-        <SubmitCarForm hostId={user.id} />
-      </div>
+    <div className="p-8 max-w-xl">
+      <Link href="/host/fleet" className="text-gray-500 hover:text-gray-900 text-sm flex items-center gap-1.5 mb-6 transition">
+        ← Back to Fleet
+      </Link>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">List a car</h1>
+      <p className="text-gray-500 text-sm mb-8">Your car will be reviewed by an admin before going live.</p>
+      <SubmitCarForm hostId={user.id} />
     </div>
   )
 }
