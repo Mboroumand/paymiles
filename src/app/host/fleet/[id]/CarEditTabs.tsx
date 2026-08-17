@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -73,6 +73,14 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
   const teslaStatus = searchParams.get('tesla')
   const teslaError = searchParams.get('tesla_error')
   const router = useRouter()
+
+  // After Tesla OAuth redirect, refresh server data then strip the query param
+  useEffect(() => {
+    if (teslaStatus === 'connected') {
+      router.refresh()
+      router.replace(`/host/fleet/${car.id}?tab=details`)
+    }
+  }, [teslaStatus])
 
   // Pricing state
   const [rate, setRate] = useState(car.rate_per_mile?.toString() ?? '')
