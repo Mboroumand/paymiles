@@ -254,7 +254,28 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
       {tab === 'details' && (
         <div>
           <h1 className="text-2xl font-bold mb-1">Details</h1>
-          <p className="text-gray-400 text-sm mb-8">Update your car's information.</p>
+          <p className="text-gray-400 text-sm mb-6">Update your car's information.</p>
+
+          {/* Tesla connection status */}
+          <div className={`rounded-2xl border p-5 mb-6 flex items-center justify-between ${car.tesla_vehicle_id ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚡</span>
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">
+                  {car.tesla_vehicle_id ? 'Tesla connected' : 'Connect your Tesla'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {car.tesla_vehicle_id
+                    ? `Vehicle ID: ${car.tesla_vehicle_id}`
+                    : 'Required to read odometer and track miles driven'}
+                </p>
+              </div>
+            </div>
+            <a href={`/api/tesla/connect?carId=${car.id}`}
+              className={`text-sm font-semibold px-4 py-2 rounded-xl transition ${car.tesla_vehicle_id ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+              {car.tesla_vehicle_id ? 'Reconnect' : 'Connect Tesla'}
+            </a>
+          </div>
 
           <form onSubmit={saveDetails} className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
             <div>

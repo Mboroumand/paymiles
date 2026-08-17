@@ -5,7 +5,13 @@ import { adminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import { Car, DollarSign, Clock, CheckCircle } from 'lucide-react'
+
+const statusStyle: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  active: 'bg-blue-100 text-blue-700 border-blue-200',
+  completed: 'bg-green-100 text-green-700 border-green-200',
+  cancelled: 'bg-red-100 text-red-600 border-red-200',
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -28,73 +34,82 @@ export default async function DashboardPage() {
   const totalSpent = bookings?.reduce((sum, b) => sum + (b.total_amount ?? 0), 0) ?? 0
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar role="guest" />
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-1">Welcome back, {profile?.full_name?.split(' ')[0] ?? 'Driver'}</h1>
-        <p className="text-gray-400 mb-8">{user.email}</p>
+
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Welcome back, {profile?.full_name?.split(' ')[0] ?? 'Driver'}
+          </h1>
+          <p className="text-gray-400 text-sm mt-0.5">{user.email}</p>
+        </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { icon: Car, label: 'Active Rentals', value: active, color: 'blue' },
-            { icon: Clock, label: 'Total Miles', value: totalMiles.toFixed(0), color: 'purple' },
-            { icon: DollarSign, label: 'Total Spent', value: `$${totalSpent.toFixed(2)}`, color: 'green' },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="bg-gray-900 border border-white/10 rounded-xl p-6 flex items-center gap-4">
-              <div className={`bg-${color}-600/20 p-3 rounded-lg`}>
-                <Icon className={`text-${color}-400`} size={22} />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">{label}</p>
-                <p className="text-2xl font-bold">{value}</p>
-              </div>
+            { label: 'Active Rentals', value: active, icon: '🚗', color: 'text-blue-600' },
+            { label: 'Total Miles', value: `${totalMiles.toFixed(0)} mi`, icon: '📍', color: 'text-purple-600' },
+            { label: 'Total Spent', value: `$${totalSpent.toFixed(0)}`, icon: '💳', color: 'text-green-600' },
+          ].map(({ label, value, icon, color }) => (
+            <div key={label} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <span className="text-2xl">{icon}</span>
+              <p className="text-gray-400 text-xs mt-3 font-medium uppercase tracking-wider">{label}</p>
+              <p className={`text-2xl font-bold mt-0.5 ${color}`}>{value}</p>
             </div>
           ))}
         </div>
 
         {/* Recent bookings */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Recent Bookings</h2>
-          <Link href="/dashboard/bookings" className="text-blue-400 hover:underline text-sm">View all →</Link>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-gray-900">Recent Trips</h2>
+          <Link href="/dashboard/bookings" className="text-sm text-gray-400 hover:text-gray-700 transition">View all →</Link>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 mb-8">
           {(!bookings || bookings.length === 0) && (
-            <div className="bg-gray-900 border border-white/10 rounded-xl p-8 text-center text-gray-500">
-              No bookings yet.{' '}
-              <Link href="/cars" className="text-blue-400 hover:underline">Browse cars</Link>
+            <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-gray-400 shadow-sm">
+              No trips yet.{' '}
+              <Link href="/cars" className="text-gray-900 font-semibold underline">Browse cars →</Link>
             </div>
           )}
           {bookings?.map(b => (
-            <div key={b.id} className="bg-gray-900 border border-white/10 rounded-xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div>
-                <p className="font-semibold">{b.car?.name ?? 'Unknown Car'}</p>
-                <p className="text-gray-400 text-sm">{new Date(b.start_date).toLocaleDateString()}</p>
+            <div key={b.id}
+              className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:border-gray-300 transition">
+              {b.car?.image_url ? (
+                <img src={b.car.image_url} className="w-16 h-11 rounded-lg object-cover flex-shrink-0" alt="" />
+              ) : (
+                <div className="w-16 h-11 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-xl">🚗</div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 text-sm">{b.car?.name ?? '—'}</p>
+                <p className="text-gray-400 text-xs mt-0.5">
+                  {new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {b.miles_driven != null && (
-                  <span className="text-gray-300 text-sm">{b.miles_driven.toFixed(1)} mi</span>
+                  <span className="text-gray-500 text-sm">{b.miles_driven.toFixed(1)} mi</span>
                 )}
                 {b.total_amount != null && (
-                  <span className="text-blue-400 font-semibold">${b.total_amount.toFixed(2)}</span>
+                  <span className="text-green-600 font-bold text-sm">${b.total_amount.toFixed(2)}</span>
                 )}
-                <span className={`text-xs px-2.5 py-1 rounded-full border ${
-                  b.status === 'active' ? 'bg-blue-600/20 text-blue-400 border-blue-500/30' :
-                  b.status === 'completed' ? 'bg-green-600/20 text-green-400 border-green-500/30' :
-                  b.status === 'cancelled' ? 'bg-red-600/20 text-red-400 border-red-500/30' :
-                  'bg-yellow-600/20 text-yellow-400 border-yellow-500/30'
-                }`}>{b.status}</span>
+                <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusStyle[b.status] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                  {b.status}
+                </span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-8">
-          <Link href="/cars" className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition">
-            Book Another Car →
-          </Link>
-        </div>
+        <Link href="/cars"
+          className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold transition text-sm">
+          Browse cars
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </Link>
       </div>
     </div>
   )
