@@ -16,7 +16,8 @@ export default function BookingSidebar({ car, isLoggedIn }: { car: Car; isLogged
 
   const includedPerDay = car.included_miles_per_day ?? 30
   const includedMiles = days * includedPerDay
-  const depositAmount = includedMiles * car.rate_per_mile
+  const milesDeposit = includedMiles * car.rate_per_mile
+  const depositAmount = milesDeposit + (wantsDelivery ? 99 : 0)
 
   const bookHref = wantsDelivery ? `/cars/${car.id}/book?delivery=1` : `/cars/${car.id}/book`
 
@@ -81,8 +82,14 @@ export default function BookingSidebar({ car, isLoggedIn }: { car: Car; isLogged
             <span>Included miles ({includedPerDay}/day × {days}d)</span>
             <span className="font-medium text-gray-700">{includedMiles} mi</span>
           </div>
-          <div className="flex justify-between text-gray-500">
-            <span>Deposit at booking</span>
+          {wantsDelivery && (
+            <div className="flex justify-between text-gray-500">
+              <span>Delivery fee</span>
+              <span className="font-medium text-gray-700">$99.00</span>
+            </div>
+          )}
+          <div className="flex justify-between text-gray-500 border-t border-gray-200 pt-1.5">
+            <span>Total due at booking</span>
             <span className="font-bold text-gray-900">${depositAmount.toFixed(0)}</span>
           </div>
           <p className="text-xs text-gray-400 pt-1">Extra miles billed at ${car.rate_per_mile}/mi after trip</p>
