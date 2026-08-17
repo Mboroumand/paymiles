@@ -46,7 +46,7 @@ const labelCls = 'block text-xs text-gray-500 mb-1'
 export default function SubmitCarForm({ hostId }: { hostId: string }) {
   const router = useRouter()
   const [form, setForm] = useState({
-    model: '', year: '', color: '', license_plate: '', rate_per_mile: '', odometer_start: '',
+    model: '', year: '', color: '', license_plate: '', rate_per_mile: '', odometer_start: '', included_miles_per_day: '30',
   })
   const [locState, setLocState] = useState('')
   const [locCity, setLocCity] = useState('')
@@ -101,6 +101,7 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
       color: form.color || null,
       license_plate: form.license_plate || null,
       rate_per_mile: parseFloat(form.rate_per_mile),
+      included_miles_per_day: parseInt(form.included_miles_per_day) || 30,
       odometer_start: form.odometer_start ? parseFloat(form.odometer_start) : null,
       location: buildLocation(),
       image_url,
@@ -178,6 +179,14 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
         <label className={labelCls}>Rate per Mile ($) *</label>
         <input value={form.rate_per_mile} onChange={update('rate_per_mile')} placeholder="0.35" required type="number" step="0.01" min="0"
           className={inputCls} />
+      </div>
+
+      {/* Included miles per day */}
+      <div>
+        <label className={labelCls}>Included miles per day *</label>
+        <input value={form.included_miles_per_day} onChange={update('included_miles_per_day')} required type="number" min="1" max="500"
+          className={inputCls} />
+        <p className="text-xs text-gray-400 mt-1">Guests are charged a deposit for these miles upfront. Default: 30 miles/day.</p>
       </div>
 
       {/* License Plate */}

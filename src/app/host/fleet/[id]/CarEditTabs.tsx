@@ -74,6 +74,7 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
 
   // Pricing state
   const [rate, setRate] = useState(car.rate_per_mile?.toString() ?? '')
+  const [includedMilesPerDay, setIncludedMilesPerDay] = useState(car.included_miles_per_day?.toString() ?? '30')
   const [savingRate, setSavingRate] = useState(false)
   const [rateMsg, setRateMsg] = useState('')
 
@@ -107,7 +108,7 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
     e.preventDefault()
     setSavingRate(true)
     setRateMsg('')
-    const result = await updateCarDetails(car.id, { rate_per_mile: parseFloat(rate) })
+    const result = await updateCarDetails(car.id, { rate_per_mile: parseFloat(rate), included_miles_per_day: parseInt(includedMilesPerDay) || 30 })
     setRateMsg(result?.error ? result.error : 'Saved!')
     setSavingRate(false)
     setTimeout(() => setRateMsg(''), 3000)
@@ -178,6 +179,13 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
                 <span className="text-gray-500 text-sm">/mile</span>
               </div>
               <p className="text-gray-600 text-xs mt-2">Guests pay exactly this per mile driven, tracked via Tesla odometer.</p>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-2">Included miles per day</label>
+              <input value={includedMilesPerDay} onChange={e => setIncludedMilesPerDay(e.target.value)}
+                type="number" min="1" max="500" required
+                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-gray-900 text-sm font-bold focus:outline-none focus:border-blue-500" />
+              <p className="text-gray-600 text-xs mt-2">Guests pay a deposit covering these miles upfront. Default: 30/day.</p>
             </div>
             <div className="flex items-center gap-3">
               <button type="submit" disabled={savingRate}
