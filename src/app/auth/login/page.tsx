@@ -21,7 +21,7 @@ export default function LoginPage() {
     
     // Fetch role
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
-    router.push(profile?.role === 'admin' ? '/admin' : '/dashboard')
+    router.push(profile?.role === 'admin' ? '/admin' : profile?.role === 'host' ? '/host' : '/dashboard')
     router.refresh()
   }
 

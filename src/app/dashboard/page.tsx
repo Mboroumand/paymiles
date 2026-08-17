@@ -11,6 +11,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
   if (profile?.role === 'admin') redirect('/admin')
+  if (profile?.role === 'host') redirect('/host')
 
   const { data: bookings } = await supabase
     .from('bookings')
