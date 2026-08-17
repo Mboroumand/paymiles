@@ -34,6 +34,10 @@ export default function Navbar({ role }: NavbarProps) {
             <Link href="/admin" className="text-gray-300 hover:text-white transition flex items-center gap-1.5">
               <LayoutDashboard size={16} /> Admin
             </Link>
+          ) : role === 'host' ? (
+            <Link href="/host" className="text-gray-300 hover:text-white transition flex items-center gap-1.5">
+              <LayoutDashboard size={16} /> My Cars
+            </Link>
           ) : role === 'guest' ? (
             <Link href="/dashboard" className="text-gray-300 hover:text-white transition flex items-center gap-1.5">
               <LayoutDashboard size={16} /> Dashboard
@@ -60,6 +64,7 @@ export default function Navbar({ role }: NavbarProps) {
         <div className="md:hidden mt-4 flex flex-col gap-3 px-2">
           <Link href="/cars" className="text-gray-300 hover:text-white py-2">Cars</Link>
           {role === 'admin' && <Link href="/admin" className="text-gray-300 hover:text-white py-2">Admin</Link>}
+          {role === 'host' && <Link href="/host" className="text-gray-300 hover:text-white py-2">My Cars</Link>}
           {role === 'guest' && <Link href="/dashboard" className="text-gray-300 hover:text-white py-2">Dashboard</Link>}
           {role ? (
             <button onClick={signOut} className="text-left text-red-400 py-2">Sign Out</button>

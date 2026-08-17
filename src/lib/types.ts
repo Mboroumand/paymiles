@@ -1,5 +1,6 @@
-export type Role = 'guest' | 'admin'
+export type Role = 'guest' | 'admin' | 'host'
 export type CarStatus = 'available' | 'rented' | 'maintenance'
+export type ListingStatus = 'pending' | 'approved' | 'rejected'
 export type BookingStatus = 'pending' | 'active' | 'completed' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'paid'
 
@@ -26,6 +27,8 @@ export interface Car {
   image_url: string | null
   tesla_vehicle_id: string | null
   odometer_start: number | null
+  listing_status: ListingStatus
+  host_id: string | null
   created_at: string
 }
 

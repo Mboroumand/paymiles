@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', email: '', password: '', license: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -41,7 +41,6 @@ export default function RegisterPage() {
             { label: 'Full Name', key: 'name', type: 'text' },
             { label: 'Email', key: 'email', type: 'email' },
             { label: 'Password', key: 'password', type: 'password' },
-            { label: "Driver's License #", key: 'license', type: 'text' },
           ].map(({ label, key, type }) => (
             <div key={key}>
               <label className="block text-sm text-gray-400 mb-1.5">{label}</label>
