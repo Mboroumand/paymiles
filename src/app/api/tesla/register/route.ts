@@ -30,7 +30,7 @@ export async function GET() {
       Authorization: `Bearer ${access_token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ domain: appUrl }),
+    body: JSON.stringify({ domain: 'paymiles.vercel.app' }),
   })
 
   const regData = await regRes.json()
