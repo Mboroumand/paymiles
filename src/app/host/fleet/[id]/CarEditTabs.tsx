@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { updateCarPhoto, updateCarDetails, toggleVehicleActive } from './actions'
+import { updateCarPhoto, updateCarDetails, toggleVehicleActive, addCarPhoto, deleteCarPhoto, setMainPhoto, linkTeslaVehicle } from './actions'
 
 const TESLA_MODELS = ['Model 3', 'Model Y', 'Model S', 'Model X', 'Cybertruck', 'Roadster']
 const COLORS = ['Black', 'White', 'Silver', 'Red', 'Blue', 'Gray', 'Pearl White', 'Midnight Silver', 'Deep Blue', 'Ultra Red']
@@ -67,7 +67,7 @@ function NavLink({ tab, label, carId }: { tab: string; label: string; carId: str
   )
 }
 
-export default function CarEditTabs({ car, hostId }: { car: any; hostId: string }) {
+export default function CarEditTabs({ car, hostId, photos: initialPhotos }: { car: any; hostId: string; photos: any[] }) {
   const searchParams = useSearchParams()
   const tab = searchParams.get('tab') ?? 'pricing'
   const teslaStatus = searchParams.get('tesla')
@@ -106,9 +106,9 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
   const [readingOdometer, setReadingOdometer] = useState(false)
   const [odometerMsg, setOdometerMsg] = useState('')
 
-  // Photo state
+  // Photos state
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [photo, setPhoto] = useState(car.image_url)
+  const [photos, setPhotos] = useState<any[]>(initialPhotos)
   const [uploading, setUploading] = useState(false)
   const [photoMsg, setPhotoMsg] = useState('')
 
@@ -148,21 +148,37 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
   async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (photos.length >= 5) { setPhotoMsg('Maximum 5 photos allowed'); return }
     setUploading(true)
     setPhotoMsg('')
     const supabase = createClient()
     const ext = file.name.split('.').pop()
-    const path = `${hostId}/${car.id}.${ext}`
-    const preview = URL.createObjectURL(file)
-    setPhoto(preview)
+    const path = `${hostId}/${car.id}-${Date.now()}.${ext}`
     const { error: uploadErr } = await supabase.storage.from('car-images').upload(path, file, { upsert: true })
-    if (uploadErr) { setPhotoMsg('Upload failed'); setUploading(false); return }
+    if (uploadErr) { setPhotoMsg('Upload failed: ' + uploadErr.message); setUploading(false); return }
     const { data: { publicUrl } } = supabase.storage.from('car-images').getPublicUrl(path)
-    const result = await updateCarPhoto(car.id, publicUrl)
-    setPhotoMsg(result?.error ? result.error : 'Photo updated!')
+    const result = await addCarPhoto(car.id, publicUrl, photos.length === 0)
+    if (result?.error) { setPhotoMsg(result.error); setUploading(false); return }
+    setPhotoMsg('Photo added!')
     setUploading(false)
+    router.refresh()
     setTimeout(() => setPhotoMsg(''), 3000)
-    if (!result?.error) router.refresh()
+  }
+
+  async function handleDeletePhoto(photoId: string, wasPrimary: boolean) {
+    const result = await deleteCarPhoto(photoId, car.id, wasPrimary)
+    if (result?.error) { setPhotoMsg(result.error); return }
+    setPhotos(p => p.filter(x => x.id !== photoId))
+    router.refresh()
+  }
+
+  async function handleSetMain(photoId: string, url: string) {
+    const result = await setMainPhoto(photoId, car.id, url)
+    if (result?.error) { setPhotoMsg(result.error); return }
+    setPhotos(p => p.map(x => ({ ...x, is_primary: x.id === photoId })))
+    setPhotoMsg('Main photo updated!')
+    setTimeout(() => setPhotoMsg(''), 3000)
+    router.refresh()
   }
 
   async function readOdometer() {
@@ -256,31 +272,65 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
       {tab === 'photos' && (
         <div>
           <h1 className="text-2xl font-bold mb-1">Photos</h1>
-          <p className="text-gray-400 text-sm mb-8">Upload a clear photo of your car. Guests see this first.</p>
+          <p className="text-gray-400 text-sm mb-6">Up to 5 photos. Star one to set it as the main listing photo.</p>
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <div className="relative rounded-xl overflow-hidden mb-4 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              {photo ? (
-                <img src={photo} alt="Car" className="w-full h-64 object-cover" />
-              ) : (
-                <div className="w-full h-64 bg-gray-100 flex items-center justify-center flex-col gap-3 text-gray-500">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-10 h-10">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                  </svg>
-                  <span className="text-sm">Click to upload</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-8 h-8">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                </svg>
-                <span className="text-white text-sm font-medium">{uploading ? 'Uploading…' : 'Change photo'}</span>
-              </div>
+          {photoMsg && (
+            <div className={`text-sm rounded-xl px-4 py-3 mb-4 ${photoMsg.includes('!') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'}`}>
+              {photoMsg}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-            {photoMsg && <p className={`text-sm ${photoMsg.includes('!') ? 'text-green-600' : 'text-red-600'}`}>{photoMsg}</p>}
-            <p className="text-gray-600 text-xs mt-2">JPG, PNG, or WEBP. Use a real photo of your car — no stock images.</p>
+          )}
+
+          {/* Photo grid */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {photos.map(p => (
+              <div key={p.id} className="relative rounded-2xl overflow-hidden group aspect-[4/3] bg-gray-100">
+                <img src={p.url} alt="Car photo" className="w-full h-full object-cover" />
+
+                {/* Primary badge */}
+                {p.is_primary && (
+                  <div className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    ★ Main
+                  </div>
+                )}
+
+                {/* Hover actions */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                  {!p.is_primary && (
+                    <button onClick={() => handleSetMain(p.id, p.url)}
+                      className="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                      ★ Set main
+                    </button>
+                  )}
+                  <button onClick={() => handleDeletePhoto(p.id, p.is_primary)}
+                    className="bg-red-500 hover:bg-red-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Upload slot */}
+            {photos.length < 5 && (
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="aspect-[4/3] rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 transition disabled:opacity-50">
+                {uploading ? (
+                  <span className="text-sm">Uploading…</span>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8">
+                      <path d="M12 4v16m8-8H4" strokeLinecap="round" />
+                    </svg>
+                    <span className="text-sm font-medium">Add photo</span>
+                    <span className="text-xs">{photos.length}/5</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
+
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+          <p className="text-xs text-gray-400">JPG, PNG, or WEBP. Hover a photo to set it as main or delete it.</p>
         </div>
       )}
 

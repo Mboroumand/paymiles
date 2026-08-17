@@ -19,8 +19,10 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
   if (!car) notFound()
   if (profile?.role !== 'admin' && car.host_id !== user.id) notFound()
 
-  // Trip count for this car
-  const { count } = await adminClient.from('bookings').select('*', { count: 'exact', head: true }).eq('car_id', id)
+  const [{ count }, { data: photos }] = await Promise.all([
+    adminClient.from('bookings').select('*', { count: 'exact', head: true }).eq('car_id', id),
+    adminClient.from('car_photos').select('*').eq('car_id', id).order('created_at'),
+  ])
 
   const statusStyle: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -68,7 +70,7 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
 
       {/* Right content */}
       <div className="flex-1 p-8 max-w-2xl">
-        <CarEditTabs car={car} hostId={user.id} />
+        <CarEditTabs car={car} hostId={user.id} photos={photos ?? []} />
       </div>
     </div>
   )
