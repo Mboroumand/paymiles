@@ -67,6 +67,7 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > 5 * 1024 * 1024) { setError('Photo must be under 5MB'); return }
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
   }

@@ -149,6 +149,7 @@ export default function CarEditTabs({ car, hostId, photos: initialPhotos }: { ca
     const file = e.target.files?.[0]
     if (!file) return
     if (photos.length >= 5) { setPhotoMsg('Maximum 5 photos allowed'); return }
+    if (file.size > 5 * 1024 * 1024) { setPhotoMsg('Photo must be under 5MB'); return }
     setUploading(true)
     setPhotoMsg('')
     const supabase = createClient()
@@ -330,7 +331,7 @@ export default function CarEditTabs({ car, hostId, photos: initialPhotos }: { ca
           </div>
 
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-          <p className="text-xs text-gray-400">JPG, PNG, or WEBP. Hover a photo to set it as main or delete it.</p>
+          <p className="text-xs text-gray-400">JPG, PNG, or WEBP · Max 5MB per photo. Hover a photo to set it as main or delete it.</p>
         </div>
       )}
 
