@@ -103,6 +103,8 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
   const [locZip, setLocZip] = useState(parsed.locZip)
   const [savingDetails, setSavingDetails] = useState(false)
   const [detailsMsg, setDetailsMsg] = useState('')
+  const [readingOdometer, setReadingOdometer] = useState(false)
+  const [odometerMsg, setOdometerMsg] = useState('')
 
   // Photo state
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -161,6 +163,27 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
     setUploading(false)
     setTimeout(() => setPhotoMsg(''), 3000)
     if (!result?.error) router.refresh()
+  }
+
+  async function readOdometer() {
+    setReadingOdometer(true)
+    setOdometerMsg('')
+    try {
+      const res = await fetch(`/api/tesla/odometer?carId=${car.id}`)
+      const data = await res.json()
+      if (data.odometer) {
+        setDetails(d => ({ ...d, odometer_start: Math.round(data.odometer).toString() }))
+        setOdometerMsg(`✓ Read ${Math.round(data.odometer).toLocaleString()} mi from Tesla`)
+      } else if (data.asleep) {
+        setOdometerMsg('Car is asleep — try again in 30 seconds')
+      } else {
+        setOdometerMsg(data.error ?? 'Could not read odometer')
+      }
+    } catch {
+      setOdometerMsg('Network error')
+    }
+    setReadingOdometer(false)
+    setTimeout(() => setOdometerMsg(''), 5000)
   }
 
   async function handleToggle() {
@@ -332,9 +355,23 @@ export default function CarEditTabs({ car, hostId }: { car: any; hostId: string 
             </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1.5">Current Odometer (mi)</label>
-              <input value={details.odometer_start} onChange={e => setDetails(d => ({ ...d, odometer_start: e.target.value }))}
-                type="number" placeholder="12500"
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500" />
+              <div className="flex gap-2">
+                <input value={details.odometer_start} onChange={e => setDetails(d => ({ ...d, odometer_start: e.target.value }))}
+                  type="number" placeholder="12500"
+                  className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500" />
+                {car.tesla_vehicle_id && (
+                  <button type="button" onClick={readOdometer} disabled={readingOdometer}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-800 disabled:opacity-50 transition whitespace-nowrap">
+                    <span>⚡</span>
+                    {readingOdometer ? 'Reading…' : 'Read from Tesla'}
+                  </button>
+                )}
+              </div>
+              {odometerMsg && (
+                <p className={`text-xs mt-1.5 ${odometerMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>
+                  {odometerMsg}
+                </p>
+              )}
             </div>
             {/* Location — structured */}
             <div className="space-y-2.5">
