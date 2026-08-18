@@ -1,7 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 const DELIVERY_FEE = 99
 
@@ -83,23 +82,21 @@ export default function CheckoutForm({ car, userId, params }: {
 
   async function handleBook() {
     setLoading(true); setError('')
-    const supabase = createClient()
-    const startH = timeToHours(startTime || '10:00 AM')
-    const endH = timeToHours(endTime || '10:00 AM')
-    const startISO = new Date(new Date(startDate + 'T00:00:00').getTime() + startH * 3600000).toISOString()
-    const endISO = new Date(new Date(endDate + 'T00:00:00').getTime() + endH * 3600000).toISOString()
-    const { error: err } = await supabase.from('bookings').insert({
-      guest_id: userId, car_id: car.id, status: 'pending',
-      start_date: startISO, end_date: endISO,
-      rate_per_mile: car.rate_per_mile,
-      delivery_requested: wantsDelivery,
-      delivery_address: wantsDelivery ? deliveryAddress : null,
-      pickup_location: wantsDelivery ? deliveryAddress : null,
-      phone: phone || null, driver_license: dl || null, notes: notes || null,
-      insurance_plan: insurance,
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        carId: car.id, startDate, endDate, startTime, endTime,
+        delivery: wantsDelivery ? '1' : '0',
+        deliveryAddress: wantsDelivery ? deliveryAddress : '',
+        phone: phone || '', dl: dl || '', notes: notes || '',
+        insurancePlan: insurance,
+        totalAmount: totalDeposit,
+      }),
     })
-    if (err) { setError(err.message); setLoading(false); return }
-    router.push('/dashboard/bookings?booked=1')
+    const data = await res.json()
+    if (!res.ok || !data.url) { setError(data.error ?? 'Failed to create checkout session'); setLoading(false); return }
+    window.location.href = data.url
   }
 
   if (!startDate || !endDate) {
