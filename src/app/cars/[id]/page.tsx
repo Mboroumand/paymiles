@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
@@ -17,13 +18,17 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
     role = data?.role
   }
 
-  const { data: car } = await supabase
-    .from('cars')
-    .select('*, host:profiles!cars_host_id_fkey(full_name)')
-    .eq('id', id)
-    .single()
+  const [{ data: car }, { data: photos }] = await Promise.all([
+    supabase.from('cars').select('*, host:profiles!cars_host_id_fkey(full_name)').eq('id', id).single(),
+    adminClient.from('car_photos').select('*').eq('car_id', id).order('is_primary', { ascending: false }).order('created_at'),
+  ])
 
   if (!car) redirect('/cars')
+
+  // Build ordered photo list: primary first, fallback to image_url
+  const photoUrls: string[] = photos && photos.length > 0
+    ? photos.map((p: { url: string }) => p.url)
+    : car.image_url ? [car.image_url] : []
 
   const features = [
     { label: '5 seats', icon: '👥' },
@@ -58,30 +63,36 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
         <div className="grid grid-cols-[1fr_240px] gap-2 h-[420px] rounded-2xl overflow-hidden">
           {/* Main photo */}
           <div className="bg-gray-100 overflow-hidden">
-            {car.image_url ? (
-              <img src={car.image_url} alt={car.name} className="w-full h-full object-cover" />
+            {photoUrls[0] ? (
+              <img src={photoUrls[0]} alt={car.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-8xl">🚗</div>
             )}
           </div>
-          {/* Thumbnails placeholder */}
+          {/* Side thumbnails */}
           <div className="grid grid-rows-2 gap-2">
-            <div className="bg-gray-100 rounded-none overflow-hidden">
-              {car.image_url ? (
-                <img src={car.image_url} alt="" className="w-full h-full object-cover" />
+            <div className="bg-gray-100 overflow-hidden">
+              {photoUrls[1] ? (
+                <img src={photoUrls[1]} alt="" className="w-full h-full object-cover" />
+              ) : photoUrls[0] ? (
+                <img src={photoUrls[0]} alt="" className="w-full h-full object-cover opacity-60" />
               ) : (
                 <div className="w-full h-full bg-gray-200" />
               )}
             </div>
             <div className="bg-gray-100 overflow-hidden relative">
-              {car.image_url ? (
-                <img src={car.image_url} alt="" className="w-full h-full object-cover opacity-80" />
+              {photoUrls[2] ? (
+                <img src={photoUrls[2]} alt="" className="w-full h-full object-cover" />
+              ) : photoUrls[0] ? (
+                <img src={photoUrls[0]} alt="" className="w-full h-full object-cover opacity-40" />
               ) : (
                 <div className="w-full h-full bg-gray-200" />
               )}
-              <div className="absolute inset-0 bg-gray-900/40 flex items-end p-3">
-                <span className="text-white text-xs font-semibold bg-black/50 px-2.5 py-1 rounded-full">View photos</span>
-              </div>
+              {photoUrls.length > 3 && (
+                <div className="absolute inset-0 bg-gray-900/50 flex items-end p-3">
+                  <span className="text-white text-xs font-semibold bg-black/50 px-2.5 py-1 rounded-full">+{photoUrls.length - 3} more</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
