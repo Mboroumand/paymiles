@@ -152,23 +152,16 @@ export default function BookingForm({ car, userId, wantsDelivery = false }: {
       setError('Please complete the full delivery address'); return
     }
     setLoading(true); setError('')
-    const supabase = createClient()
-    const startH = timeToHours(startTime)
-    const endH = timeToHours(endTime)
-    const startISO = new Date(new Date(startDate + 'T00:00:00').getTime() + startH * 3600000).toISOString()
-    const endISO = new Date(new Date(endDate + 'T00:00:00').getTime() + endH * 3600000).toISOString()
-    const { error: err } = await supabase.from('bookings').insert({
-      guest_id: userId, car_id: car.id, status: 'pending',
-      start_date: startISO,
-      end_date: endISO,
-      rate_per_mile: car.rate_per_mile, odometer_start: car.odometer_start,
-      delivery_requested: wantsDelivery,
-      delivery_address: wantsDelivery ? fullDeliveryAddress : null,
-      pickup_location: wantsDelivery ? fullDeliveryAddress : null,
-      phone: phone || null, driver_license: driverLicense || null, notes: notes || null,
+    // Navigate to checkout with trip details as params
+    const params = new URLSearchParams({
+      startDate, endDate, startTime, endTime,
+      delivery: wantsDelivery ? '1' : '0',
+      ...(wantsDelivery ? { deliveryAddress: fullDeliveryAddress } : {}),
+      ...(phone ? { phone } : {}),
+      ...(driverLicense ? { dl: driverLicense } : {}),
+      ...(notes ? { notes } : {}),
     })
-    if (err) { setError(err.message); setLoading(false); return }
-    router.push('/dashboard/bookings')
+    setTimeout(() => router.push(`/cars/${car.id}/checkout?${params}`), 600)
   }
 
   const cells = buildCells()
@@ -361,8 +354,8 @@ export default function BookingForm({ car, userId, wantsDelivery = false }: {
       </div>
 
       <button type="submit" disabled={loading || !startDate || !endDate}
-        className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white py-3.5 rounded-xl font-semibold transition text-base">
-        {loading ? 'Booking…' : `Confirm & Pay${totalDeposit > 0 ? ` $${totalDeposit.toFixed(2)}` : ''}`}
+        className={`w-full py-3.5 rounded-xl font-semibold transition-all text-base ${loading ? 'bg-green-500 text-white scale-[1.02]' : 'bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white'}`}>
+        {loading ? "Let's go! →" : `Confirm & Pay${totalDeposit > 0 ? ` $${totalDeposit.toFixed(2)}` : ''}`}
       </button>
     </form>
   )
