@@ -8,10 +8,13 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { full_name, phone, date_of_birth, dl_number, dl_expiry } = body
+  const { full_name, phone, date_of_birth, dl_number, dl_expiry, dl_front_url, dl_back_url } = body
 
   if (!dl_number || !dl_expiry) {
     return NextResponse.json({ error: "Driver's license number and expiry are required" }, { status: 400 })
+  }
+  if (!dl_front_url || !dl_back_url) {
+    return NextResponse.json({ error: "Please upload both front and back photos of your license" }, { status: 400 })
   }
 
   const { error } = await adminClient.from('profiles').upsert({
@@ -22,6 +25,8 @@ export async function POST(req: NextRequest) {
     date_of_birth: date_of_birth || null,
     dl_number,
     dl_expiry,
+    dl_front_url,
+    dl_back_url,
     dl_status: 'pending',
   })
 

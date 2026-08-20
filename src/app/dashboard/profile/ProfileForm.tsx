@@ -1,11 +1,65 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
   profile: any
   userId: string
   email: string
+}
+
+function PhotoUpload({
+  label, side, disabled, existingPath, onUploaded,
+}: {
+  label: string
+  side: 'front' | 'back'
+  disabled: boolean
+  existingPath?: string
+  onUploaded: (path: string) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [done, setDone] = useState(!!existingPath)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPreview(URL.createObjectURL(file))
+    setUploading(true)
+
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('side', side)
+
+    const res = await fetch('/api/profile/upload-dl', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploading(false)
+    if (res.ok) {
+      setDone(true)
+      onUploaded(data.url)
+    }
+  }
+
+  return (
+    <div
+      onClick={() => !disabled && !uploading && inputRef.current?.click()}
+      className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-2 transition cursor-pointer
+        ${disabled ? 'bg-gray-50 border-gray-100 cursor-not-allowed' : done ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-400 bg-white'}`}
+    >
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={disabled} />
+      {preview ? (
+        <img src={preview} alt={label} className="w-full h-32 object-cover rounded-lg" />
+      ) : done ? (
+        <div className="text-green-600 text-3xl">✓</div>
+      ) : (
+        <div className="text-gray-300 text-3xl">📷</div>
+      )}
+      <p className={`text-xs font-medium ${done ? 'text-green-700' : 'text-gray-500'}`}>
+        {uploading ? 'Uploading…' : done ? `${label} uploaded` : `Tap to upload ${label}`}
+      </p>
+    </div>
+  )
 }
 
 export default function ProfileForm({ profile, userId, email }: Props) {
@@ -17,6 +71,8 @@ export default function ProfileForm({ profile, userId, email }: Props) {
     dl_number: profile?.dl_number ?? '',
     dl_expiry: profile?.dl_expiry ?? '',
   })
+  const [dlFrontPath, setDlFrontPath] = useState<string>(profile?.dl_front_url ?? '')
+  const [dlBackPath, setDlBackPath] = useState<string>(profile?.dl_back_url ?? '')
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -29,13 +85,14 @@ export default function ProfileForm({ profile, userId, email }: Props) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.dl_number || !form.dl_expiry) { setError('Driver\'s license number and expiry are required'); return }
+    if (!form.dl_number || !form.dl_expiry) { setError("Driver's license number and expiry are required"); return }
+    if (!dlFrontPath || !dlBackPath) { setError('Please upload both front and back photos of your license'); return }
     setLoading(true); setError('')
 
     const res = await fetch('/api/profile/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, dl_front_url: dlFrontPath, dl_back_url: dlBackPath }),
     })
     const data = await res.json()
 
@@ -83,15 +140,28 @@ export default function ProfileForm({ profile, userId, email }: Props) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1.5">License Number <span className="text-red-400">*</span></label>
-          <input type="text" value={form.dl_number} onChange={set('dl_number')} placeholder="e.g. D1234567" required
-            className={inputCls} disabled={!canEdit} />
+          <input type="text" value={form.dl_number} onChange={set('dl_number')} placeholder="e.g. D1234567" required className={inputCls} disabled={!canEdit} />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1.5">Expiration Date <span className="text-red-400">*</span></label>
           <input type="date" value={form.dl_expiry} onChange={set('dl_expiry')} required
-            min={new Date().toISOString().split('T')[0]}
-            className={inputCls} disabled={!canEdit} />
+            min={new Date().toISOString().split('T')[0]} className={inputCls} disabled={!canEdit} />
         </div>
+
+        {/* Photo uploads */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-2">License Photos <span className="text-red-400">*</span></label>
+          <div className="grid grid-cols-2 gap-3">
+            <PhotoUpload label="Front" side="front" disabled={!canEdit}
+              existingPath={profile?.dl_front_url}
+              onUploaded={setDlFrontPath} />
+            <PhotoUpload label="Back" side="back" disabled={!canEdit}
+              existingPath={profile?.dl_back_url}
+              onUploaded={setDlBackPath} />
+          </div>
+          <p className="text-xs text-gray-400 mt-2">Upload clear photos of both sides of your driver's license</p>
+        </div>
+
         {!canEdit && profile?.dl_status === 'approved' && (
           <p className="text-xs text-gray-400">Your license is verified. Contact support to update it.</p>
         )}
