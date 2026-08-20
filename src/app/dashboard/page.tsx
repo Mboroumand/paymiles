@@ -78,7 +78,7 @@ export default async function DashboardPage() {
             </div>
           )}
           {bookings?.map(b => (
-            <div key={b.id}
+            <Link key={b.id} href={`/dashboard/bookings/${b.id}`}
               className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:border-gray-300 transition">
               {b.car?.image_url ? (
                 <img src={b.car.image_url} className="w-16 h-11 rounded-lg object-cover flex-shrink-0" alt="" />
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
                   {b.status}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

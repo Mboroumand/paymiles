@@ -39,7 +39,7 @@ export default async function BookingsPage() {
         ) : (
           <div className="space-y-4">
             {bookings.map(b => (
-              <div key={b.id} className="bg-gray-900 border border-white/10 rounded-2xl p-6">
+              <Link key={b.id} href={`/dashboard/bookings/${b.id}`} className="block bg-gray-900 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
@@ -73,7 +73,7 @@ export default async function BookingsPage() {
                     }`}>{b.payment_status}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
