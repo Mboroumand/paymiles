@@ -52,6 +52,16 @@ const nav = [
       </svg>
     ),
   },
+  {
+    href: '/host/wallet',
+    label: 'Wallet',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z" />
+        <circle cx="16" cy="14" r="1.5" fill="currentColor" />
+      </svg>
+    ),
+  },
 ]
 
 export default function HostSidebar() {

@@ -22,6 +22,8 @@ export default async function DashboardPage() {
   if (profile?.role === 'admin') redirect('/admin')
   if (profile?.role === 'host') redirect('/host')
 
+  const { data: wallet } = await adminClient.from('wallets').select('balance').eq('user_id', user.id).single()
+
   const { data: bookings } = await supabase
     .from('bookings')
     .select('*, car:cars(*)')
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
             { label: 'Active Rentals', value: active, icon: '🚗', color: 'text-blue-600' },
             { label: 'Total Miles', value: `${totalMiles.toFixed(0)} mi`, icon: '📍', color: 'text-purple-600' },
             { label: 'Total Spent', value: `$${totalSpent.toFixed(0)}`, icon: '💳', color: 'text-green-600' },
+          { label: 'Wallet Balance', value: `$${(wallet?.balance ?? 0).toFixed(2)}`, icon: '👛', color: 'text-indigo-600' },
           ].map(({ label, value, icon, color }) => (
             <div key={label} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
               <span className="text-2xl">{icon}</span>
@@ -102,6 +105,18 @@ export default async function DashboardPage() {
             </div>
           ))}
         </div>
+
+        <Link href="/dashboard/wallet"
+          className="flex items-center justify-between bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:border-gray-300 transition mb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">👛</span>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">My Wallet</p>
+              <p className="text-gray-400 text-xs">Balance: ${(wallet?.balance ?? 0).toFixed(2)}</p>
+            </div>
+          </div>
+          <span className="text-gray-400 text-sm">→</span>
+        </Link>
 
         <Link href="/cars"
           className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold transition text-sm">
