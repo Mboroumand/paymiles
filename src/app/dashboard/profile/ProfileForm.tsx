@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -33,18 +32,14 @@ export default function ProfileForm({ profile, userId, email }: Props) {
     if (!form.dl_number || !form.dl_expiry) { setError('Driver\'s license number and expiry are required'); return }
     setLoading(true); setError('')
 
-    const supabase = createClient()
-    const { error: err } = await supabase.from('profiles').upsert({
-      id: userId,
-      full_name: form.full_name,
-      phone: form.phone,
-      date_of_birth: form.date_of_birth || null,
-      dl_number: form.dl_number,
-      dl_expiry: form.dl_expiry,
-      dl_status: 'pending',
+    const res = await fetch('/api/profile/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
     })
+    const data = await res.json()
 
-    if (err) { setError(err.message); setLoading(false); return }
+    if (!res.ok) { setError(data.error ?? 'Failed to save'); setLoading(false); return }
     setSaved(true)
     setTimeout(() => { router.refresh(); setSaved(false) }, 1500)
     setLoading(false)
