@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function ApproveButtons({ userId, currentStatus }: { userId: string; currentStatus: string }) {
@@ -9,8 +8,11 @@ export default function ApproveButtons({ userId, currentStatus }: { userId: stri
 
   async function setStatus(status: 'approved' | 'rejected') {
     setLoading(true)
-    const supabase = createClient()
-    await supabase.from('profiles').update({ dl_status: status }).eq('id', userId)
+    await fetch('/api/admin/dl-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, status }),
+    })
     router.refresh()
     setLoading(false)
   }

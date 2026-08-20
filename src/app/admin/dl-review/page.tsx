@@ -15,9 +15,9 @@ export default async function DLReviewPage() {
 
   const { data: pending } = await adminClient
     .from('profiles')
-    .select('id, full_name, email, dl_number, dl_expiry, dl_status, updated_at')
+    .select('id, full_name, email, dl_number, dl_expiry, dl_status, created_at')
     .in('dl_status', ['pending', 'approved', 'rejected'])
-    .order('updated_at', { ascending: false })
+    .order('created_at', { ascending: false })
 
   return (
     <div className="p-8">
@@ -56,7 +56,7 @@ export default async function DLReviewPage() {
                 </div>
                 <div>
                   <span className="text-gray-400 text-xs uppercase tracking-wide">Submitted</span>
-                  <p className="text-gray-600">{new Date(p.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  <p className="text-gray-600">{p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</p>
                 </div>
               </div>
             </div>
