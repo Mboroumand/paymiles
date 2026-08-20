@@ -13,9 +13,11 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
   const { data: { user } } = await supabase.auth.getUser()
 
   let role: string | undefined
+  let dlStatus: string | undefined
   if (user) {
-    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const { data } = await supabase.from('profiles').select('role, dl_status').eq('id', user.id).single()
     role = data?.role
+    dlStatus = data?.dl_status
   }
 
   const [{ data: car }, { data: photos }] = await Promise.all([
@@ -208,7 +210,7 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
 
           {/* Right: sticky booking sidebar */}
           <div className="sticky top-20">
-            <BookingSidebar car={{ id: car.id, name: car.name, rate_per_mile: car.rate_per_mile, location: car.location, included_miles_per_day: car.included_miles_per_day ?? 30 }} isLoggedIn={!!user} />
+            <BookingSidebar car={{ id: car.id, name: car.name, rate_per_mile: car.rate_per_mile, location: car.location, included_miles_per_day: car.included_miles_per_day ?? 30 }} isLoggedIn={!!user} dlStatus={dlStatus} />
           </div>
         </div>
       </div>

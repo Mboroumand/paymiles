@@ -45,6 +45,16 @@ const nav = [
       </svg>
     ),
   },
+  {
+    href: '/admin/dl-review',
+    label: 'DL Review',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <path d="M7 15v-1a3 3 0 016 0v1M10 9a2 2 0 100 4 2 2 0 000-4zM16 11h2M16 14h2" />
+      </svg>
+    ),
+  },
 ]
 
 export default function AdminSidebar() {

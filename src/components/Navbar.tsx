@@ -50,10 +50,16 @@ export default function Navbar({ role }: NavbarProps) {
             </Link>
           )}
           {role === 'guest' && (
-            <Link href="/dashboard"
-              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">
-              My Trips
-            </Link>
+            <>
+              <Link href="/dashboard"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">
+                My Trips
+              </Link>
+              <Link href="/dashboard/profile"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">
+                Profile
+              </Link>
+            </>
           )}
 
           {role ? (
@@ -95,6 +101,7 @@ export default function Navbar({ role }: NavbarProps) {
           {role === 'admin' && <Link href="/admin" className="py-2 text-sm text-gray-700">Admin</Link>}
           {role === 'host' && <Link href="/host" className="py-2 text-sm text-gray-700">Host Dashboard</Link>}
           {role === 'guest' && <Link href="/dashboard" className="py-2 text-sm text-gray-700">My Trips</Link>}
+          {role === 'guest' && <Link href="/dashboard/profile" className="py-2 text-sm text-gray-700">Profile</Link>}
           {role ? (
             <button onClick={signOut} className="text-left py-2 text-sm text-red-500">Sign Out</button>
           ) : (

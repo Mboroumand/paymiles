@@ -10,7 +10,7 @@ interface Car {
   included_miles_per_day?: number | null
 }
 
-export default function BookingSidebar({ car, isLoggedIn }: { car: Car; isLoggedIn: boolean }) {
+export default function BookingSidebar({ car, isLoggedIn, dlStatus }: { car: Car; isLoggedIn: boolean; dlStatus?: string }) {
   const [days, setDays] = useState(3)
   const [wantsDelivery, setWantsDelivery] = useState(false)
 
@@ -97,10 +97,20 @@ export default function BookingSidebar({ car, isLoggedIn }: { car: Car; isLogged
       </div>
 
       {/* CTA */}
-      {isLoggedIn ? (
+      {isLoggedIn && dlStatus === 'approved' ? (
         <Link href={bookHref}
           className="block w-full text-center bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-xl font-semibold transition">
           {wantsDelivery ? 'Request delivery & book' : 'Book this car'}
+        </Link>
+      ) : isLoggedIn && dlStatus === 'pending' ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3.5 text-center">
+          <p className="text-yellow-700 text-sm font-medium">⏳ License under review</p>
+          <p className="text-yellow-500 text-xs mt-0.5">You'll be able to book once approved (usually within 24h)</p>
+        </div>
+      ) : isLoggedIn ? (
+        <Link href="/dashboard/profile"
+          className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-semibold transition">
+          Verify license to book →
         </Link>
       ) : (
         <div className="space-y-2">
