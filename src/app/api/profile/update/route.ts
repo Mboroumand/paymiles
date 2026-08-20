@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await adminClient.from('profiles').upsert({
     id: user.id,
+    email: user.email,
     full_name,
     phone,
     date_of_birth: date_of_birth || null,
