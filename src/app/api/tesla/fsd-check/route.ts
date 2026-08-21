@@ -75,20 +75,17 @@ export async function POST(req: NextRequest) {
   const autopilotVersion: string = config.autopilot_version ?? ''
   const driverAssist: string = config.driver_assist ?? ''
 
-  // FSD detection — check every known field Tesla uses
-  // autopilot_version: "FSDc" = FSD Computer (HW3), "2.5" = HW2.5 (no FSD hw)
-  // driver_assist: "AUTOPILOT_FULL_SELF_DRIVING" or "AUTOPILOT_NON_CHINA" (basic)
-  // active_route_traffic_minutes_delay not relevant
-  // Also check: eu_vehicle, default_charge_to_max are not FSD related
+  // FSD detection based on known Tesla driver_assist values:
+  // "TeslaAP4"  → HW4 (2024+ cars) — FSD capable ✅
+  // "TeslaAP3"  → HW3 FSD Computer — FSD capable ✅
+  // "TeslaAP2.5"→ HW2.5 — Enhanced Autopilot only ❌
+  // "AUTOPILOT_FULL_SELF_DRIVING" → FSD active ✅
+  // "AUTOPILOT_NON_CHINA" → basic autopilot ❌
+  const FSD_CAPABLE = ['TeslaAP3', 'TeslaAP4', 'FULL_SELF_DRIVING', 'FSD']
   const hasFsd =
-    autopilotVersion.toUpperCase().includes('FSD') ||
-    driverAssist.toUpperCase().includes('FSD') ||
-    driverAssist.toUpperCase().includes('FULL_SELF_DRIVING') ||
-    // Some Tesla API versions use these keys
-    config.full_self_driving === true ||
-    config.fsd === true ||
-    // FSD Computer hardware (autopilot_version "3.0" = HW3 = FSD Computer)
-    (autopilotVersion === '3.0')
+    FSD_CAPABLE.some(v => driverAssist.toUpperCase().includes(v.toUpperCase())) ||
+    FSD_CAPABLE.some(v => autopilotVersion.toUpperCase().includes(v.toUpperCase())) ||
+    config.full_self_driving === true
 
   // Auto-update the car record
   await adminClient.from('cars').update({ has_fsd: hasFsd }).eq('id', carId)
