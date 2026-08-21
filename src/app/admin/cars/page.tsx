@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import AddCarForm from './AddCarForm'
 import CarActions from './CarActions'
 import ApprovalActions from './ApprovalActions'
+import EditCarForm from './EditCarForm'
 
 export default async function AdminCarsPage() {
   const supabase = await createClient()
@@ -71,22 +72,17 @@ export default async function AdminCarsPage() {
       )}
 
       {/* All cars + add form */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div>
-          <h2 className="font-semibold text-gray-900 mb-4">Add Car Directly</h2>
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <AddCarForm />
-          </div>
-        </div>
+      <div className="space-y-6">
+        <AddCarForm />
 
-        <div className="lg:col-span-2">
+        <div>
           <h2 className="font-semibold text-gray-900 mb-4">All Cars ({rest.length})</h2>
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
             {rest.length === 0 && (
               <p className="text-gray-400 text-sm text-center py-12">No cars yet</p>
             )}
-            {rest.map((car, i) => (
-              <div key={car.id} className={`flex gap-4 p-5 hover:bg-gray-50 transition ${i !== 0 ? 'border-t border-gray-100' : ''}`}>
+            {rest.map((car, idx) => (
+              <div key={car.id} className={`flex gap-4 p-5 hover:bg-gray-50 transition ${idx !== 0 ? 'border-t border-gray-100' : ''}`}>
                 {car.image_url ? (
                   <img src={car.image_url} className="w-20 h-14 rounded-xl object-cover flex-shrink-0" alt="" />
                 ) : (
@@ -99,15 +95,16 @@ export default async function AdminCarsPage() {
                       <p className="text-gray-400 text-xs">{car.year}{car.color ? ` · ${car.color}` : ''}</p>
                       {car.host && <p className="text-purple-600 text-xs">Host: {car.host.full_name ?? car.host.email}</p>}
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
                       <p className="text-blue-600 font-bold text-sm">${car.rate_per_mile}/mi</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusStyle[car.listing_status] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                         {car.listing_status}
                       </span>
                     </div>
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center gap-2">
                     <CarActions carId={car.id} currentStatus={car.status} teslaVehicleId={car.tesla_vehicle_id} />
+                    <EditCarForm car={car} />
                   </div>
                 </div>
               </div>
