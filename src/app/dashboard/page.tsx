@@ -89,6 +89,9 @@ export default async function DashboardPage() {
                 <p className="font-semibold text-gray-900 text-sm">{b.car?.name ?? '—'}</p>
                 <p className="text-gray-400 text-xs mt-0.5">
                   {new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {b.end_date && (
+                    <> → {new Date(b.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-3">
