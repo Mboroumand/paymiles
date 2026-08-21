@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     location: body.location || null,
     image_url: body.image_url || null,
     tesla_vehicle_id: body.tesla_vehicle_id || null,
+    has_fsd: body.has_fsd ?? false,
     listing_status: 'approved',
     status: 'available',
   }).select().single()
@@ -54,6 +55,7 @@ export async function PATCH(req: NextRequest) {
   if ('image_url' in fields) update.image_url = fields.image_url || null
   if ('tesla_vehicle_id' in fields) update.tesla_vehicle_id = fields.tesla_vehicle_id || null
   if ('listing_status' in fields) update.listing_status = fields.listing_status
+  if ('has_fsd' in fields) update.has_fsd = fields.has_fsd
 
   const { error } = await adminClient.from('cars').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

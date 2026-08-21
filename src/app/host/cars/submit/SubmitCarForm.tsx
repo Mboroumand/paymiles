@@ -48,6 +48,7 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
   const [form, setForm] = useState({
     model: '', year: '', color: '', license_plate: '', rate_per_mile: '', odometer_start: '', included_miles_per_day: '30',
   })
+  const [hasFsd, setHasFsd] = useState(false)
   const [locState, setLocState] = useState('')
   const [locCity, setLocCity] = useState('')
   const [locAddress, setLocAddress] = useState('')
@@ -104,6 +105,7 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
       rate_per_mile: parseFloat(form.rate_per_mile),
       included_miles_per_day: parseInt(form.included_miles_per_day) || 30,
       odometer_start: form.odometer_start ? parseFloat(form.odometer_start) : null,
+      has_fsd: hasFsd,
       location: buildLocation(),
       image_url,
       host_id: hostId,
@@ -200,6 +202,19 @@ export default function SubmitCarForm({ hostId }: { hostId: string }) {
       <div>
         <label className={labelCls}>Current Odometer (mi)</label>
         <input value={form.odometer_start} onChange={update('odometer_start')} placeholder="12500" type="number" className={inputCls} />
+      </div>
+
+      {/* FSD */}
+      <div
+        onClick={() => setHasFsd(v => !v)}
+        className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition ${hasFsd ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+        <div>
+          <p className="text-sm font-medium text-gray-900">Full Self-Driving (FSD)</p>
+          <p className="text-xs text-gray-400">Does this car have Tesla FSD capability?</p>
+        </div>
+        <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${hasFsd ? 'bg-blue-600' : 'bg-gray-200'}`}>
+          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${hasFsd ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </div>
       </div>
 
       {/* Location — structured */}

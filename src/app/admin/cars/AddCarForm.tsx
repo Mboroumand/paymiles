@@ -14,6 +14,7 @@ export default function AddCarForm() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ model: '', year: '', color: '', license_plate: '', rate_per_mile: '', odometer_start: '', included_miles_per_day: '30', tesla_vehicle_id: '' })
+  const [hasFsd, setHasFsd] = useState(false)
   const [locState, setLocState] = useState('')
   const [locCity, setLocCity] = useState('')
   const [locAddress, setLocAddress] = useState('')
@@ -39,7 +40,7 @@ export default function AddCarForm() {
     const res = await fetch('/api/admin/cars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, location: buildLocation() }),
+      body: JSON.stringify({ ...form, has_fsd: hasFsd, location: buildLocation() }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); setLoading(false); return }
@@ -163,6 +164,19 @@ export default function AddCarForm() {
       <div>
         <label className={l}>Tesla Vehicle ID</label>
         <input value={form.tesla_vehicle_id} onChange={upd('tesla_vehicle_id')} placeholder="From Tesla Fleet API" className={i} />
+      </div>
+
+      {/* FSD */}
+      <div
+        onClick={() => setHasFsd(v => !v)}
+        className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition ${hasFsd ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+        <div>
+          <p className="text-sm font-medium text-gray-900">Full Self-Driving (FSD)</p>
+          <p className="text-xs text-gray-400">Car includes Tesla FSD capability</p>
+        </div>
+        <div className={`relative w-10 h-5 rounded-full transition-colors ${hasFsd ? 'bg-blue-600' : 'bg-gray-200'}`}>
+          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${hasFsd ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </div>
       </div>
 
       {/* Location */}

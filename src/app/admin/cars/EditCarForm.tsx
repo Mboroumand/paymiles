@@ -26,6 +26,7 @@ interface Car {
   image_url: string | null
   tesla_vehicle_id: string | null
   listing_status: string
+  has_fsd: boolean | null
   photos?: Photo[]
 }
 
@@ -43,6 +44,7 @@ export default function EditCarForm({ car }: { car: Car }) {
     location: car.location ?? '',
     tesla_vehicle_id: car.tesla_vehicle_id ?? '',
     listing_status: car.listing_status ?? 'approved',
+    has_fsd: car.has_fsd ?? false,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -149,6 +151,19 @@ export default function EditCarForm({ car }: { car: Car }) {
           <div>
             <label className={lbl}>Tesla Vehicle ID</label>
             <input value={form.tesla_vehicle_id} onChange={upd('tesla_vehicle_id')} placeholder="From Tesla Fleet API" className={inp} />
+          </div>
+
+          {/* FSD */}
+          <div
+            onClick={() => setForm(f => ({ ...f, has_fsd: !f.has_fsd }))}
+            className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition ${form.has_fsd ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Full Self-Driving (FSD)</p>
+              <p className="text-xs text-gray-400">Car includes Tesla FSD capability</p>
+            </div>
+            <div className={`relative w-10 h-5 rounded-full transition-colors ${form.has_fsd ? 'bg-blue-600' : 'bg-gray-200'}`}>
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.has_fsd ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </div>
           </div>
 
           {/* Location */}

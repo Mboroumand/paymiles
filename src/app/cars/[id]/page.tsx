@@ -35,7 +35,7 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
   const features = [
     { label: '5 seats', icon: '👥' },
     { label: 'Electric', icon: '⚡' },
-    { label: 'Autopilot', icon: '🤖' },
+    ...(car.has_fsd ? [{ label: 'Full Self-Driving', icon: '🚗' }] : [{ label: 'Autopilot', icon: '🤖' }]),
     { label: 'Auto transmission', icon: '⚙️' },
   ]
 
@@ -178,6 +178,7 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
                   { label: 'Color', value: car.color || '—' },
                   { label: 'Plate', value: car.license_plate || '—' },
                   { label: 'Rate', value: `$${car.rate_per_mile}/mile` },
+                  { label: 'FSD', value: car.has_fsd ? '✅ Included' : '—' },
                   { label: 'Location', value: car.location || '—' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between py-2 border-b border-gray-50 text-sm">
