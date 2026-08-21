@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 const TESLA_MODELS = ['Model 3', 'Model Y', 'Model S', 'Model X', 'Cybertruck', 'Roadster']
@@ -18,10 +18,11 @@ export default function AddCarForm() {
   const [locCity, setLocCity] = useState('')
   const [locAddress, setLocAddress] = useState('')
   const [locZip, setLocZip] = useState('')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   function upd(k: string) { return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm(f => ({ ...f, [k]: e.target.value })) }
 
@@ -34,26 +35,29 @@ export default function AddCarForm() {
     if (!form.model) { setError('Select a model'); return }
     setLoading(true); setError('')
 
-    let image_url: string | null = null
-    if (imageFile) {
-      const fd = new FormData(); fd.append('file', imageFile)
-      const r = await fetch('/api/admin/cars/upload', { method: 'POST', body: fd })
-      const d = await r.json()
-      if (!r.ok) { setError(d.error); setLoading(false); return }
-      image_url = d.url
-    }
-
+    // Create car first
     const res = await fetch('/api/admin/cars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, image_url, location: buildLocation() }),
+      body: JSON.stringify({ ...form, location: buildLocation() }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); setLoading(false); return }
+
+    // Upload photos to car_photos
+    const carId = data.car.id
+    for (let idx = 0; idx < photoFiles.length; idx++) {
+      const fd = new FormData()
+      fd.append('file', photoFiles[idx])
+      fd.append('car_id', carId)
+      fd.append('is_primary', idx === 0 ? 'true' : 'false')
+      await fetch('/api/admin/cars/photos', { method: 'POST', body: fd })
+    }
+
     setOpen(false)
     setForm({ model: '', year: '', color: '', license_plate: '', rate_per_mile: '', odometer_start: '', included_miles_per_day: '30', tesla_vehicle_id: '' })
     setLocState(''); setLocCity(''); setLocAddress(''); setLocZip('')
-    setImageFile(null); setImagePreview(null)
+    setPhotoFiles([]); setPhotoPreviews([])
     setLoading(false)
     router.refresh()
   }
@@ -77,18 +81,34 @@ export default function AddCarForm() {
 
       {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
 
-      {/* Photo */}
+      {/* Photos */}
       <div>
-        <label className={l}>Car Photo</label>
-        <label className="cursor-pointer block">
-          <div className={`border-2 border-dashed rounded-xl overflow-hidden transition ${imagePreview ? 'border-blue-400' : 'border-gray-200 hover:border-gray-400'}`}>
-            {imagePreview
-              ? <img src={imagePreview} className="w-full h-40 object-cover" alt="" />
-              : <div className="h-40 flex flex-col items-center justify-center text-gray-400 gap-2 text-sm"><span className="text-3xl">📷</span>Click to upload</div>}
-          </div>
-          <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)) } }} />
-        </label>
-        {imagePreview && <button type="button" onClick={() => { setImageFile(null); setImagePreview(null) }} className="text-xs text-red-400 hover:underline mt-1">Remove</button>}
+        <label className={l}>Car Photos (up to 5)</label>
+        <div className="grid grid-cols-3 gap-2">
+          {photoPreviews.map((src, pi) => (
+            <div key={pi} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-100">
+              <img src={src} className="w-full h-full object-cover" alt="" />
+              {pi === 0 && <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-medium">Primary</span>}
+              <button type="button" onClick={() => {
+                setPhotoFiles(f => f.filter((_, i) => i !== pi))
+                setPhotoPreviews(p => p.filter((_, i) => i !== pi))
+              }} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition flex items-center justify-center">×</button>
+            </div>
+          ))}
+          {photoPreviews.length < 5 && (
+            <button type="button" onClick={() => photoInputRef.current?.click()}
+              className="aspect-video rounded-xl border-2 border-dashed border-gray-200 hover:border-gray-400 flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition text-xs gap-1">
+              <span className="text-xl">+</span><span>Add photo</span>
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 mt-1">{photoPreviews.length}/5 photos · first photo is primary</p>
+        <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => {
+          if (!e.target.files) return
+          const newFiles = Array.from(e.target.files).slice(0, 5 - photoFiles.length)
+          setPhotoFiles(f => [...f, ...newFiles])
+          setPhotoPreviews(p => [...p, ...newFiles.map(f => URL.createObjectURL(f))])
+        }} />
       </div>
 
       {/* Model */}

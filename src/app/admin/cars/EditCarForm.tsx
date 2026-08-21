@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import CarPhotosManager from './CarPhotosManager'
 
 const TESLA_MODELS = ['Model 3', 'Model Y', 'Model S', 'Model X', 'Cybertruck', 'Roadster']
 const COLORS = ['Black', 'White', 'Silver', 'Red', 'Blue', 'Gray', 'Pearl White', 'Midnight Silver', 'Deep Blue', 'Ultra Red']
@@ -8,6 +9,8 @@ const COLORS = ['Black', 'White', 'Silver', 'Red', 'Blue', 'Gray', 'Pearl White'
 const inp = 'w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-gray-400 placeholder:text-gray-400'
 const sel = 'w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-gray-400'
 const lbl = 'block text-xs font-medium text-gray-500 mb-1'
+
+interface Photo { id: string; url: string; is_primary: boolean }
 
 interface Car {
   id: string
@@ -23,6 +26,7 @@ interface Car {
   image_url: string | null
   tesla_vehicle_id: string | null
   listing_status: string
+  photos?: Photo[]
 }
 
 export default function EditCarForm({ car }: { car: Car }) {
@@ -40,8 +44,6 @@ export default function EditCarForm({ car }: { car: Car }) {
     tesla_vehicle_id: car.tesla_vehicle_id ?? '',
     listing_status: car.listing_status ?? 'approved',
   })
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(car.image_url)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
@@ -52,19 +54,10 @@ export default function EditCarForm({ car }: { car: Car }) {
     e.preventDefault()
     setLoading(true); setError(''); setSaved(false)
 
-    let image_url = car.image_url
-    if (imageFile) {
-      const fd = new FormData(); fd.append('file', imageFile)
-      const r = await fetch('/api/admin/cars/upload', { method: 'POST', body: fd })
-      const d = await r.json()
-      if (!r.ok) { setError(d.error); setLoading(false); return }
-      image_url = d.url
-    }
-
     const res = await fetch('/api/admin/cars', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: car.id, ...form, image_url }),
+      body: JSON.stringify({ id: car.id, ...form }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); setLoading(false); return }
@@ -94,17 +87,13 @@ export default function EditCarForm({ car }: { car: Car }) {
           {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
           {saved && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3">Saved!</div>}
 
-          {/* Photo */}
+          {/* Photos */}
           <div>
-            <label className={lbl}>Car Photo</label>
-            <label className="cursor-pointer block">
-              <div className="border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-xl overflow-hidden transition">
-                {imagePreview
-                  ? <img src={imagePreview} className="w-full h-40 object-cover" alt="" />
-                  : <div className="h-40 flex items-center justify-center text-gray-400 text-sm gap-2"><span className="text-3xl">📷</span>Click to upload</div>}
-              </div>
-              <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)) } }} />
-            </label>
+            <label className={lbl}>Car Photos (up to 5)</label>
+            <CarPhotosManager
+              carId={car.id}
+              initialPhotos={car.photos ?? (car.image_url ? [{ id: 'legacy', url: car.image_url, is_primary: true }] : [])}
+            />
           </div>
 
           {/* Model & Year */}

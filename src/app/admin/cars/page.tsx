@@ -24,12 +24,12 @@ export default async function AdminCarsPage() {
   // Fetch all photos for all cars
   const carIds = cars?.map(c => c.id) ?? []
   const { data: allPhotos } = carIds.length > 0
-    ? await adminClient.from('car_photos').select('car_id, url, is_primary').in('car_id', carIds).order('is_primary', { ascending: false }).order('created_at')
+    ? await adminClient.from('car_photos').select('id, car_id, url, is_primary').in('car_id', carIds).order('is_primary', { ascending: false }).order('created_at')
     : { data: [] }
-  const photosByCarId: Record<string, string[]> = {}
+  const photosByCarId: Record<string, { id: string; url: string; is_primary: boolean }[]> = {}
   for (const p of allPhotos ?? []) {
     if (!photosByCarId[p.car_id]) photosByCarId[p.car_id] = []
-    photosByCarId[p.car_id].push(p.url)
+    photosByCarId[p.car_id].push({ id: p.id, url: p.url, is_primary: p.is_primary })
   }
 
   const pending = cars?.filter(c => c.listing_status === 'pending') ?? []
@@ -93,14 +93,14 @@ export default async function AdminCarsPage() {
               <p className="text-gray-400 text-sm text-center py-12">No cars yet</p>
             )}
             {rest.map((car, idx) => {
-              const photos = photosByCarId[car.id] ?? (car.image_url ? [car.image_url] : [])
+              const photos = photosByCarId[car.id] ?? (car.image_url ? [{ id: 'legacy', url: car.image_url, is_primary: true }] : [])
               return (
               <div key={car.id} className={`p-5 hover:bg-gray-50 transition ${idx !== 0 ? 'border-t border-gray-100' : ''}`}>
                 {/* Photo strip */}
                 {photos.length > 0 && (
                   <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
-                    {photos.map((url, pi) => (
-                      <img key={pi} src={url} className={`h-20 rounded-xl object-cover flex-shrink-0 ${pi === 0 ? 'w-32' : 'w-24 opacity-80'}`} alt="" />
+                    {photos.map((photo, pi) => (
+                      <img key={pi} src={photo.url} className={`h-20 rounded-xl object-cover flex-shrink-0 ${pi === 0 ? 'w-32' : 'w-24 opacity-80'}`} alt="" />
                     ))}
                   </div>
                 )}
@@ -120,7 +120,7 @@ export default async function AdminCarsPage() {
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <CarActions carId={car.id} currentStatus={car.status} teslaVehicleId={car.tesla_vehicle_id} />
-                    <EditCarForm car={car} />
+                    <EditCarForm car={{ ...car, photos: photosByCarId[car.id] ?? [] }} />
                   </div>
                 </div>
               </div>
