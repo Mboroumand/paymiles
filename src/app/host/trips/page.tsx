@@ -21,7 +21,7 @@ export default async function HostTripsPage() {
   if (profile?.role !== 'host' && profile?.role !== 'admin') redirect('/dashboard')
 
   const { data: cars } = await adminClient.from('cars').select('id').eq('host_id', user.id)
-  const carIds = (cars ?? []).map(c => c.id)
+  const carIds = (cars ?? []).map((c: any) => c.id)
 
   const { data: trips } = carIds.length
     ? await adminClient
@@ -31,43 +31,97 @@ export default async function HostTripsPage() {
         .order('created_at', { ascending: false })
     : { data: [] }
 
-  const active = (trips ?? []).filter(t => t.status === 'active')
-  const past = (trips ?? []).filter(t => t.status !== 'active')
+  // Fetch inspection status for all trips
+  const tripIds = (trips ?? []).map((t: any) => t.id)
+  let inspectionMap: Record<string, { checkin: boolean; checkout: boolean }> = {}
+  if (tripIds.length > 0) {
+    try {
+      const { data: inspections } = await adminClient
+        .from('trip_inspections')
+        .select('booking_id, phase')
+        .in('booking_id', tripIds)
+      for (const ins of inspections ?? []) {
+        if (!inspectionMap[ins.booking_id]) inspectionMap[ins.booking_id] = { checkin: false, checkout: false }
+        if (ins.phase === 'checkin') inspectionMap[ins.booking_id].checkin = true
+        if (ins.phase === 'checkout') inspectionMap[ins.booking_id].checkout = true
+      }
+    } catch {}
+  }
+
+  const pending = (trips ?? []).filter((t: any) => t.status === 'pending')
+  const active = (trips ?? []).filter((t: any) => t.status === 'active')
+  const past = (trips ?? []).filter((t: any) => t.status !== 'pending' && t.status !== 'active')
 
   function TripRow({ trip }: { trip: any }) {
+    const ins = inspectionMap[trip.id] ?? { checkin: false, checkout: false }
+    const needsCheckin = !ins.checkin && (trip.status === 'pending' || trip.status === 'active')
+    const needsCheckout = ins.checkin && !ins.checkout && trip.status === 'active'
+
     return (
-      <Link href={`/host/trips/${trip.id}`}
-        className="flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition">
-        {trip.car?.image_url ? (
-          <img src={trip.car.image_url} className="w-14 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
-        ) : (
-          <div className="w-14 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-gray-900 truncate">{trip.car?.name ?? '—'}</p>
-          <p className="text-gray-400 text-xs">{trip.guest?.full_name ?? trip.guest?.email ?? 'Guest'}</p>
-        </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-gray-400 text-xs">{new Date(trip.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-          {trip.end_date && <p className="text-gray-400 text-xs">→ {new Date(trip.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
-        </div>
-        <div className="text-right min-w-[70px]">
-          {trip.miles_driven != null ? (
-            <p className="text-sm font-medium text-gray-700">{trip.miles_driven.toFixed(1)} mi</p>
+      <div className="border-b border-gray-100 last:border-0">
+        <div className="flex items-center gap-4 px-5 py-4">
+          {trip.car?.image_url ? (
+            <img src={trip.car.image_url} className="w-14 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
           ) : (
-            <p className="text-gray-300 text-sm">— mi</p>
+            <div className="w-14 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
           )}
-          {trip.total_amount != null && (
-            <p className="text-green-600 text-xs font-semibold">${trip.total_amount.toFixed(2)}</p>
+
+          <Link href={`/host/trips/${trip.id}`} className="flex-1 min-w-0 hover:opacity-80 transition">
+            <p className="font-medium text-sm text-gray-900 truncate">{trip.car?.name ?? '—'}</p>
+            <p className="text-gray-400 text-xs">{trip.guest?.full_name ?? trip.guest?.email ?? 'Guest'}</p>
+          </Link>
+
+          <div className="text-right hidden sm:block">
+            <p className="text-gray-400 text-xs">{new Date(trip.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+            {trip.end_date && <p className="text-gray-400 text-xs">→ {new Date(trip.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
+          </div>
+
+          <div className="text-right min-w-[60px] hidden sm:block">
+            {trip.miles_driven != null ? (
+              <p className="text-sm font-medium text-gray-700">{trip.miles_driven.toFixed(1)} mi</p>
+            ) : (
+              <p className="text-gray-300 text-sm">— mi</p>
+            )}
+            {trip.total_amount != null && (
+              <p className="text-green-600 text-xs font-semibold">${trip.total_amount.toFixed(2)}</p>
+            )}
+          </div>
+
+          {/* Inspection action button — most important thing on active trips */}
+          {needsCheckin && (
+            <Link href={`/host/trips/${trip.id}/checkin`}
+              onClick={e => e.stopPropagation()}
+              className="flex-shrink-0 flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow-sm">
+              📋 Check-in
+            </Link>
           )}
+          {needsCheckout && (
+            <Link href={`/host/trips/${trip.id}/checkout`}
+              onClick={e => e.stopPropagation()}
+              className="flex-shrink-0 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow-sm">
+              🏁 Check-out
+            </Link>
+          )}
+
+          {/* Inspection dots */}
+          {(ins.checkin || ins.checkout) && (
+            <div className="flex gap-1 flex-shrink-0">
+              <span title="Checked in" className={`w-2 h-2 rounded-full ${ins.checkin ? 'bg-green-500' : 'bg-gray-200'}`} />
+              <span title="Checked out" className={`w-2 h-2 rounded-full ${ins.checkout ? 'bg-blue-500' : 'bg-gray-200'}`} />
+            </div>
+          )}
+
+          <span className={`text-xs px-2.5 py-1 rounded-full border font-medium flex-shrink-0 ${badge[trip.status] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+            {trip.status}
+          </span>
+
+          <Link href={`/host/trips/${trip.id}`} className="text-gray-300 hover:text-gray-500 flex-shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium flex-shrink-0 ${badge[trip.status] ?? 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-          {trip.status}
-        </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-gray-300 flex-shrink-0">
-          <path d="M9 18l6-6-6-6" />
-        </svg>
-      </Link>
+      </div>
     )
   }
 
@@ -81,6 +135,18 @@ export default async function HostTripsPage() {
         </div>
       )}
 
+      {pending.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-yellow-500" />
+            <h2 className="text-sm font-semibold text-yellow-600 uppercase tracking-wider">Pending ({pending.length})</h2>
+          </div>
+          <div className="bg-white border border-yellow-200 rounded-2xl overflow-hidden shadow-sm">
+            {pending.map((t: any) => <TripRow key={t.id} trip={t} />)}
+          </div>
+        </div>
+      )}
+
       {active.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
@@ -88,7 +154,7 @@ export default async function HostTripsPage() {
             <h2 className="text-sm font-semibold text-blue-600 uppercase tracking-wider">Active ({active.length})</h2>
           </div>
           <div className="bg-white border border-blue-200 rounded-2xl overflow-hidden shadow-sm">
-            {active.map(t => <TripRow key={t.id} trip={t} />)}
+            {active.map((t: any) => <TripRow key={t.id} trip={t} />)}
           </div>
         </div>
       )}
@@ -97,7 +163,7 @@ export default async function HostTripsPage() {
         <div>
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">History ({past.length})</h2>
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-            {past.map(t => <TripRow key={t.id} trip={t} />)}
+            {past.map((t: any) => <TripRow key={t.id} trip={t} />)}
           </div>
         </div>
       )}

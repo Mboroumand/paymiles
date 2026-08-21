@@ -28,15 +28,18 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
     ? await adminClient.from('profiles').select('id, full_name, email, created_at').eq('id', trip.guest_id).single()
     : { data: null }
 
-  // Fetch inspections
-  const { data: inspections } = await adminClient
-    .from('trip_inspections')
-    .select('*, photos:trip_inspection_photos(id, url, label)')
-    .eq('booking_id', id)
-    .order('created_at')
-
-  const checkin = inspections?.find(i => i.phase === 'checkin')
-  const checkout = inspections?.find(i => i.phase === 'checkout')
+  // Fetch inspections (table may not exist yet)
+  let checkin: any = null
+  let checkout: any = null
+  try {
+    const { data: inspections } = await adminClient
+      .from('trip_inspections')
+      .select('*, photos:trip_inspection_photos(id, url, label)')
+      .eq('booking_id', id)
+      .order('created_at')
+    checkin = inspections?.find((i: any) => i.phase === 'checkin') ?? null
+    checkout = inspections?.find((i: any) => i.phase === 'checkout') ?? null
+  } catch {}
 
   const statusColor: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
