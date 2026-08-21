@@ -21,6 +21,17 @@ export default async function AdminCarsPage() {
     .select('*, host:profiles!cars_host_id_fkey(full_name, email)')
     .order('created_at', { ascending: false })
 
+  // Fetch all photos for all cars
+  const carIds = cars?.map(c => c.id) ?? []
+  const { data: allPhotos } = carIds.length > 0
+    ? await adminClient.from('car_photos').select('car_id, url, is_primary').in('car_id', carIds).order('is_primary', { ascending: false }).order('created_at')
+    : { data: [] }
+  const photosByCarId: Record<string, string[]> = {}
+  for (const p of allPhotos ?? []) {
+    if (!photosByCarId[p.car_id]) photosByCarId[p.car_id] = []
+    photosByCarId[p.car_id].push(p.url)
+  }
+
   const pending = cars?.filter(c => c.listing_status === 'pending') ?? []
   const rest = cars?.filter(c => c.listing_status !== 'pending') ?? []
 
@@ -81,12 +92,17 @@ export default async function AdminCarsPage() {
             {rest.length === 0 && (
               <p className="text-gray-400 text-sm text-center py-12">No cars yet</p>
             )}
-            {rest.map((car, idx) => (
-              <div key={car.id} className={`flex gap-4 p-5 hover:bg-gray-50 transition ${idx !== 0 ? 'border-t border-gray-100' : ''}`}>
-                {car.image_url ? (
-                  <img src={car.image_url} className="w-20 h-14 rounded-xl object-cover flex-shrink-0" alt="" />
-                ) : (
-                  <div className="w-20 h-14 rounded-xl bg-gray-100 flex-shrink-0" />
+            {rest.map((car, idx) => {
+              const photos = photosByCarId[car.id] ?? (car.image_url ? [car.image_url] : [])
+              return (
+              <div key={car.id} className={`p-5 hover:bg-gray-50 transition ${idx !== 0 ? 'border-t border-gray-100' : ''}`}>
+                {/* Photo strip */}
+                {photos.length > 0 && (
+                  <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                    {photos.map((url, pi) => (
+                      <img key={pi} src={url} className={`h-20 rounded-xl object-cover flex-shrink-0 ${pi === 0 ? 'w-32' : 'w-24 opacity-80'}`} alt="" />
+                    ))}
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -108,7 +124,8 @@ export default async function AdminCarsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            )
+            })}
           </div>
         </div>
       </div>
