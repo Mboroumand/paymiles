@@ -10,58 +10,6 @@ const inp = 'w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm
 const sel = 'w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-gray-400'
 const lbl = 'block text-xs font-medium text-gray-500 mb-1'
 
-function CheckFsdButton({ carId, onResult }: { carId: string; onResult: (hasFsd: boolean) => void }) {
-  const [checking, setChecking] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
-  const [rawConfig, setRawConfig] = useState<any>(null)
-  const [showRaw, setShowRaw] = useState(false)
-
-  async function check(e: React.MouseEvent) {
-    e.preventDefault(); e.stopPropagation()
-    setChecking(true); setResult(null); setRawConfig(null)
-    const res = await fetch('/api/tesla/fsd-check', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ carId }),
-    })
-    const data = await res.json()
-    setChecking(false)
-    if (res.ok) {
-      onResult(data.has_fsd)
-      setRawConfig(data.raw_config)
-      setResult(data.has_fsd
-        ? `✅ FSD detected (autopilot: ${data.autopilot_version}, assist: ${data.driver_assist})`
-        : `❌ No FSD found (autopilot: ${data.autopilot_version}, assist: ${data.driver_assist})`)
-    } else if (data.asleep) {
-      setResult('😴 Vehicle asleep — try again in 30s')
-    } else {
-      setResult(`⚠️ ${data.error}`)
-    }
-  }
-
-  return (
-    <div className="mt-2 space-y-1.5">
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={check} disabled={checking}
-          className="text-xs px-3 py-1.5 bg-white border border-blue-300 hover:border-blue-500 text-blue-600 rounded-lg font-medium transition disabled:opacity-50">
-          {checking ? 'Checking…' : '⚡ Check via Tesla API'}
-        </button>
-        {result && <span className="text-xs text-gray-600">{result}</span>}
-        {rawConfig && (
-          <button type="button" onClick={e => { e.stopPropagation(); setShowRaw(v => !v) }}
-            className="text-xs text-gray-400 hover:text-gray-600 underline">
-            {showRaw ? 'hide raw' : 'raw data'}
-          </button>
-        )}
-      </div>
-      {showRaw && rawConfig && (
-        <pre className="text-[10px] bg-gray-900 text-green-400 rounded-lg p-3 overflow-x-auto max-h-48 leading-relaxed">
-          {JSON.stringify(rawConfig, null, 2)}
-        </pre>
-      )}
-    </div>
-  )
-}
 
 interface Photo { id: string; url: string; is_primary: boolean }
 
@@ -217,9 +165,6 @@ export default function EditCarForm({ car }: { car: Car }) {
                 <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.has_fsd ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </div>
             </div>
-            {car.tesla_vehicle_id && (
-              <CheckFsdButton carId={car.id} onResult={(v) => setForm(f => ({ ...f, has_fsd: v }))} />
-            )}
           </div>
 
           {/* Location */}

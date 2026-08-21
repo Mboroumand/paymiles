@@ -15,6 +15,15 @@ async function getAuthorizedUser(carId: string) {
   return { user, car }
 }
 
+export async function toggleFsd(carId: string, hasFsd: boolean) {
+  const auth = await getAuthorizedUser(carId)
+  if ('error' in auth && auth.error) return { error: auth.error }
+  const { error } = await adminClient.from('cars').update({ has_fsd: hasFsd }).eq('id', carId)
+  if (error) return { error: error.message }
+  revalidatePath(`/host/fleet/${carId}`)
+  return { success: true }
+}
+
 export async function updateCarPhoto(carId: string, imageUrl: string) {
   const auth = await getAuthorizedUser(carId)
   if ('error' in auth && auth.error) return { error: auth.error }

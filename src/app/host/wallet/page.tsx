@@ -63,7 +63,7 @@ export default async function HostWalletPage() {
         </div>
 
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 text-sm text-blue-700">
-          Earnings are credited after each booking (90% of trip value — 10% platform fee). Payout to bank coming soon.
+          Earnings are credited after each completed booking. Paymiles keeps 25% as a platform fee — you receive 75% of each trip&apos;s total value. Payout to bank coming soon.
         </div>
 
         {/* Transactions */}

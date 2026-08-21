@@ -254,13 +254,13 @@ export default async function HomePage() {
                 Your Tesla earns<br />while you don't drive.
               </h2>
               <p className="text-white/50 text-base leading-relaxed">
-                List your Tesla in minutes. Guests pay per mile — you keep 90% of every dollar. Live odometer tracking means you're always in control.
+                List your Tesla in minutes. Guests pay per mile — you keep 75% of every dollar. Live odometer tracking means you&apos;re always in control.
               </p>
             </div>
             <div className="flex-shrink-0 text-center">
               <div className="grid grid-cols-2 gap-4 mb-8 text-left">
                 {[
-                  { n: '90%', l: 'earnings you keep' },
+                  { n: '75%', l: 'earnings you keep' },
                   { n: '$0', l: 'listing fee' },
                   { n: '⚡', l: 'Tesla API connected' },
                   { n: '🔒', l: 'insured bookings' },

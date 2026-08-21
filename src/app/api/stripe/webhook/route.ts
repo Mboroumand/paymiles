@@ -35,56 +35,6 @@ function timeToHours(t: string): number {
   return h + min / 60
 }
 
-const FSD_CAPABLE = ['TeslaAP3', 'TeslaAP4', 'FULL_SELF_DRIVING', 'FSD']
-
-async function checkFsdInBackground(carId: string) {
-  const { data: car } = await adminClient.from('cars').select('tesla_vehicle_id, host_id').eq('id', carId).single()
-  if (!car?.tesla_vehicle_id) return
-
-  const { data: profile } = await adminClient.from('profiles')
-    .select('tesla_access_token, tesla_refresh_token, tesla_token_expires_at')
-    .eq('id', car.host_id).single()
-  if (!profile?.tesla_access_token) return
-
-  let token = profile.tesla_access_token
-  if (profile.tesla_token_expires_at && new Date(profile.tesla_token_expires_at) < new Date()) {
-    const r = await fetch('https://auth.tesla.com/oauth2/v3/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: process.env.TESLA_CLIENT_ID!,
-        client_secret: process.env.TESLA_CLIENT_SECRET!,
-        refresh_token: profile.tesla_refresh_token,
-      }),
-    })
-    if (!r.ok) return
-    const tokens = await r.json()
-    await adminClient.from('profiles').update({
-      tesla_access_token: tokens.access_token,
-      tesla_refresh_token: tokens.refresh_token,
-      tesla_token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
-    }).eq('id', car.host_id)
-    token = tokens.access_token
-  }
-
-  const res = await fetch(
-    `https://fleet-api.prd.na.vn.cloud.tesla.com/api/1/vehicles/${car.tesla_vehicle_id}/vehicle_data?endpoints=vehicle_config`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  )
-  if (!res.ok) return
-
-  const data = await res.json()
-  const config = data?.response?.vehicle_config ?? {}
-  const driverAssist: string = config.driver_assist ?? ''
-  const autopilotVersion: string = config.autopilot_version ?? ''
-  const hasFsd =
-    FSD_CAPABLE.some(v => driverAssist.toUpperCase().includes(v.toUpperCase())) ||
-    FSD_CAPABLE.some(v => autopilotVersion.toUpperCase().includes(v.toUpperCase())) ||
-    config.full_self_driving === true
-
-  await adminClient.from('cars').update({ has_fsd: hasFsd }).eq('id', carId)
-}
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -132,19 +82,15 @@ export async function POST(req: NextRequest) {
       stripe_payment_intent: session.payment_intent as string,
     }).select('id').single()
 
-    // Re-check FSD status at booking time (subscription may have changed)
-    if (booking) {
-      checkFsdInBackground(m.carId).catch(() => {})
-    }
-
-    // Credit host wallet with platform fee deducted (10%)
+    // Credit host wallet (75%) and admin platform wallet (25%)
     if (booking && m.totalAmount) {
       const total = parseFloat(m.totalAmount)
-      const hostEarning = parseFloat((total * 0.9).toFixed(2))
+      const hostEarning = parseFloat((total * 0.75).toFixed(2))
+      const platformFee = parseFloat((total * 0.25).toFixed(2))
       const { data: car } = await adminClient.from('cars').select('host_id').eq('id', m.carId).single()
       if (car?.host_id) {
         await creditWallet(car.host_id, hostEarning, 'earning',
-          `Booking earned (after 10% fee)`, booking.id)
+          `Booking earned (after 25% platform fee)`, booking.id)
       }
       // Debit guest wallet if they paid with wallet
       if (m.paymentMethod === 'wallet' && m.guestId) {

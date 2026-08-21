@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { updateCarPhoto, updateCarDetails, toggleVehicleActive, addCarPhoto, deleteCarPhoto, setMainPhoto, linkTeslaVehicle } from './actions'
+import { updateCarPhoto, updateCarDetails, toggleVehicleActive, addCarPhoto, deleteCarPhoto, setMainPhoto, linkTeslaVehicle, toggleFsd } from './actions'
 
 const TESLA_MODELS = ['Model 3', 'Model Y', 'Model S', 'Model X', 'Cybertruck', 'Roadster']
 const COLORS = ['Black', 'White', 'Silver', 'Red', 'Blue', 'Gray', 'Pearl White', 'Midnight Silver', 'Deep Blue', 'Ultra Red']
@@ -101,6 +101,8 @@ export default function CarEditTabs({ car, hostId, photos: initialPhotos }: { ca
   const [locCity, setLocCity] = useState(parsed.locCity)
   const [locAddress, setLocAddress] = useState(parsed.locAddress)
   const [locZip, setLocZip] = useState(parsed.locZip)
+  const [hasFsd, setHasFsd] = useState(car.has_fsd ?? false)
+  const [fsdSaving, setFsdSaving] = useState(false)
   const [savingDetails, setSavingDetails] = useState(false)
   const [detailsMsg, setDetailsMsg] = useState('')
   const [readingOdometer, setReadingOdometer] = useState(false)
@@ -265,6 +267,30 @@ export default function CarEditTabs({ car, hostId, photos: initialPhotos }: { ca
                   Awaiting admin approval
                 </span>
               )}
+            </div>
+          </div>
+
+          {/* FSD toggle */}
+          <div className={`bg-white border rounded-2xl p-6 mt-4 transition ${hasFsd ? 'border-blue-300' : 'border-gray-200'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Full Self-Driving (FSD)</p>
+                <p className="text-gray-400 text-sm mt-0.5">
+                  {hasFsd ? 'FSD is active on this car.' : 'FSD is not enabled on this car.'}
+                </p>
+              </div>
+              <button
+                disabled={fsdSaving}
+                onClick={async () => {
+                  setFsdSaving(true)
+                  const next = !hasFsd
+                  setHasFsd(next)
+                  await toggleFsd(car.id, next)
+                  setFsdSaving(false)
+                }}
+                className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-50 ${hasFsd ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${hasFsd ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              </button>
             </div>
           </div>
         </div>
