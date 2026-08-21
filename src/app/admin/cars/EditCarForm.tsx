@@ -10,6 +10,41 @@ const inp = 'w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm
 const sel = 'w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-gray-400'
 const lbl = 'block text-xs font-medium text-gray-500 mb-1'
 
+function CheckFsdButton({ carId, onResult }: { carId: string; onResult: (hasFsd: boolean) => void }) {
+  const [checking, setChecking] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  async function check(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation()
+    setChecking(true); setResult(null)
+    const res = await fetch('/api/tesla/fsd-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ carId }),
+    })
+    const data = await res.json()
+    setChecking(false)
+    if (res.ok) {
+      onResult(data.has_fsd)
+      setResult(data.has_fsd ? `✅ FSD active (${data.autopilot_version})` : `❌ No FSD (${data.autopilot_version || 'standard autopilot'})`)
+    } else if (data.asleep) {
+      setResult('😴 Vehicle asleep — try again in 30s')
+    } else {
+      setResult(`⚠️ ${data.error}`)
+    }
+  }
+
+  return (
+    <div className="mt-2 flex items-center gap-3">
+      <button type="button" onClick={check} disabled={checking}
+        className="text-xs px-3 py-1.5 bg-white border border-blue-300 hover:border-blue-500 text-blue-600 rounded-lg font-medium transition disabled:opacity-50">
+        {checking ? 'Checking…' : '⚡ Check via Tesla API'}
+      </button>
+      {result && <span className="text-xs text-gray-600">{result}</span>}
+    </div>
+  )
+}
+
 interface Photo { id: string; url: string; is_primary: boolean }
 
 interface Car {
@@ -154,16 +189,19 @@ export default function EditCarForm({ car }: { car: Car }) {
           </div>
 
           {/* FSD */}
-          <div
-            onClick={() => setForm(f => ({ ...f, has_fsd: !f.has_fsd }))}
-            className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition ${form.has_fsd ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Full Self-Driving (FSD)</p>
-              <p className="text-xs text-gray-400">Car includes Tesla FSD capability</p>
+          <div className={`px-4 py-3 rounded-xl border transition ${form.has_fsd ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => setForm(f => ({ ...f, has_fsd: !f.has_fsd }))}>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Full Self-Driving (FSD)</p>
+                <p className="text-xs text-gray-400">Car includes Tesla FSD capability</p>
+              </div>
+              <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-4 ${form.has_fsd ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.has_fsd ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </div>
             </div>
-            <div className={`relative w-10 h-5 rounded-full transition-colors ${form.has_fsd ? 'bg-blue-600' : 'bg-gray-200'}`}>
-              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.has_fsd ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </div>
+            {car.tesla_vehicle_id && (
+              <CheckFsdButton carId={car.id} onResult={(v) => setForm(f => ({ ...f, has_fsd: v }))} />
+            )}
           </div>
 
           {/* Location */}
